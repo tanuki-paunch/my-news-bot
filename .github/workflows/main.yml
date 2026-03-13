@@ -1,8 +1,6 @@
 name: Update News
 on:
-  workflow_dispatch: # This adds the "Run workflow" button
-  schedule:
-    - cron: '0 13 * * *' # Runs automatically once a day
+  workflow_dispatch:
 
 jobs:
   build:
@@ -11,16 +9,18 @@ jobs:
       contents: write
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4 # Updated version
+        uses: actions/checkout@v4
+
+      - name: List Files (Debug)
+        run: ls -R  # This will show us EXACTLY where your files are hidden
 
       - name: Set up Python
-        uses: actions/setup-python@v5 # Updated version
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Install Tools
-        run: |
-          pip install feedparser beautifulsoup4 requests
+        run: pip install feedparser beautifulsoup4 requests
 
       - name: Run Bot
         run: python bot.py
