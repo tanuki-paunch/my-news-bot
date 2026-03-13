@@ -25,15 +25,8 @@ jobs:
           KEYWORDS = ["Zorro Ranch", "Clementon", "Chris Hammond"]
           # -------------------------------
 
-          RSS_FEEDS = [
-    "https://news.google.com/rss",
-    "courierpostonline.com/feed"
-    "https://www.nj.com/rss/"
-    "outhjersey.com/rss"
-    "https://nmindepth.com/feed"
-    "https://www.koat.com/article/rss/3618299"
-    
-]
+          RSS_FEEDS = ["https://news.google.com/rss", "courierpostonline.com/feed", "https://www.nj.com/rss/",  "southjersey.com/rss", "https://nmindepth.com/feed",  "https://www.koat.com/article/rss/3618299"]
+   
           results = []
           
           for url in RSS_FEEDS:
