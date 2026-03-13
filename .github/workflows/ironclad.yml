@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required to handle the history correctly
 
       - name: Generate News
         run: |
@@ -20,7 +22,6 @@ jobs:
           import feedparser
           import datetime
 
-          # YOUR TARGET DATA
           KEYWORDS = ["Zorro Ranch", "Clementon"]
           RSS_FEEDS = [
               "https://news.google.com/rss", 
@@ -37,30 +38,33 @@ jobs:
                   feed = feedparser.parse(url)
                   for entry in feed.entries:
                       if any(k.lower() in entry.title.lower() for k in KEYWORDS):
-                          results.append(f"<li><a href='{entry.link}'>{entry.title}</a></li>")
+                          results.append(f"<li><a href='{entry.link}' target='_blank'>{entry.title}</a></li>")
               except:
                   continue
           
-          # BUILD THE PAGE
           list_html = "".join(results) if results else "<li>No news found for those specific topics today.</li>"
           full_page = f"""
           <html>
-          <body style='font-family:sans-serif; padding:50px; max-width:800px; margin:auto;'>
-            <h1>Daily Briefing</h1>
-            <p><small>Last updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}</small></p>
-            <ul>{list_html}</ul>
+          <body style='font-family:sans-serif; padding:50px; max-width:800px; margin:auto; background:#f9f9f9;'>
+            <div style='background:white; padding:30px; border-radius:8px; border:1px solid #ddd;'>
+              <h1 style='color:#333;'>Daily Briefing</h1>
+              <p><small>Last updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')} UTC</small></p>
+              <hr>
+              <ul style='line-height:1.8; font-size:18px;'>{list_html}</ul>
+            </div>
           </body>
           </html>
           """
-          
           with open("index.html", "w") as f:
               f.write(full_page)
           EOF
 
-      - name: Save
+      - name: Force Save
         run: |
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
           git add index.html
-          git commit -m "Update with custom keywords" || exit 0
-          git push
+          git commit -m "Update News" || exit 0
+          # We pull and then force push to stop the "Rejected" error
+          git pull --rebase origin main
+          git push -f origin main
