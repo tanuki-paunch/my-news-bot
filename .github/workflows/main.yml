@@ -8,27 +8,39 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: List Files (Debug)
-        run: ls -R  # This will show us EXACTLY where your files are hidden
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Tools
-        run: pip install feedparser beautifulsoup4 requests
-
-      - name: Run Bot
-        run: python bot.py
-
-      - name: Save Results
+      - name: Create and Run Bot
         run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'actions@github.com'
+          pip install feedparser beautifulsoup4 requests
+          # This writes the python script directly to the runner
+          cat << 'EOF' > runner_bot.py
+          import feedparser
+          from bs4 import BeautifulSoup
+          import datetime
+
+          KEYWORDS = ["AI", "Space", "Technology"]
+          RSS_FEEDS = ["https://news.google.com/rss"]
+
+          results = []
+          for url in RSS_FEEDS:
+              feed = feedparser.parse(url)
+              for entry in feed.entries:
+                  if any(key.lower() in entry.title.lower() for key in KEYWORDS):
+                      results.append(f"<h3><a href='{entry.link}'>{entry.title}</a></h3>")
+          
+          content = "".join(results) if results else "<h3>No news found today.</h3>"
+          with open("index.html", "w") as f:
+              f.write(f"<html><body><h1>Daily News</h1>{content}</body></html>")
+          EOF
+          
+          python runner_bot.py
+
+      - name: Save to Page
+        run: |
+          git config --global user.name 'NewsBot'
+          git config --global user.email 'bot@noreply.github.com'
           git add index.html
-          git commit -m "Automated News Update" || echo "No changes to commit"
+          git commit -m "Update news" || exit 0
           git push
