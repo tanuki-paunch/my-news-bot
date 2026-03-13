@@ -4,7 +4,7 @@ import datetime
 import os
 
 # --- CONFIGURATION ---
-KEYWORDS = ["Zorry Ranch", "Clementon", "Chris Hammond"] # Add your own here!
+KEYWORDS = ["Zorro Ranch", "Clementon", "Chris Hammond"] # Add your own here!
 RSS_FEEDS = [
     "https://news.google.com/rss",
     "courierpostonline.com/feed"
