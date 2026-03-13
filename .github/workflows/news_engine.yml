@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-bot:
+  run-bot: 
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -11,40 +11,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Dependencies
-        run: pip install feedparser beautifulsoup4 requests
-
       - name: Generate News
         run: |
-          cat << 'EOF' > run_me.py
-          import feedparser
-          from bs4 import BeautifulSoup
+          python3 - <<EOF
+          import urllib.request
           import datetime
+
+          # SIMPLE KEYWORDS
+          KEYWORDS = ["AI", "Tech", "Space"]
           
-          # EDIT THESE KEYWORDS RIGHT HERE
-          KEYWORDS = ["Zorro Ranch", "Clementon"]
-          RSS_FEEDS = ["https://news.google.com/rss", "courierpostonline.com/feed", "https://www.nj.com/rss/",  "southjersey.com/rss", "https://nmindepth.com/feed",  "https://www.koat.com/article/rss/3618299"]
-          
-          results = []
-          for url in FEEDS:
-              f = feedparser.parse(url)
-              for e in f.entries:
-                  if any(k.lower() in e.title.lower() for k in KEYWORDS):
-                      results.append(f"<li><a href='{e.link}'>{e.title}</a></li>")
-          
-          html = f"<html><body><h1>News Brief: {datetime.datetime.now().strftime('%Y-%m-%d')}</h1><ul>"
-          html += "".join(results) if results else "<li>No stories found today.</li>"
-          html += "</ul></body></html>"
-          
-          with open("index.html", "w") as f:
-              f.write(html)
+          # Using a basic RSS fetch without external libraries
+          url = "https://news.google.com/rss"
+          try:
+              response = urllib.request.urlopen(url)
+              data = response.read().decode('utf-8')
+              
+              # Very basic manual parsing to avoid dependencies
+              items = data.split('<item>')[1:]
+              results = []
+              
+              for item in items:
+                  title = item.split('<title>')[1].split('</title>')[0]
+                  link = item.split('<link>')[1].split('</link>')[0]
+                  if any(k.lower() in title.lower() for k in KEYWORDS):
+                      results.append(f"<li><a href='{link}'>{title}</a></li>")
+              
+              content = "".join(results) if results else "<li>No matching news today.</li>"
+              html = f"<html><body><h1>News: {datetime.datetime.now()}</h1><ul>{content}</ul></body></html>"
+              
+              with open("index.html", "w") as f:
+                  f.write(html)
+              print("Successfully created index.html")
+          except Exception as e:
+              print(f"Error: {e}")
+              exit(1)
           EOF
-          python run_me.py
 
       - name: Commit and Push
         run: |
