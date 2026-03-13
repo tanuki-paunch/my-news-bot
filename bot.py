@@ -4,10 +4,15 @@ import datetime
 import os
 
 # --- CONFIGURATION ---
-KEYWORDS = ["AI", "Space", "Technology"] # Add your own here!
+KEYWORDS = ["Zorry Ranch", "Clementon", "Chris Hammond"] # Add your own here!
 RSS_FEEDS = [
     "https://news.google.com/rss",
-    "https://www.theverge.com/rss/index.xml"
+    "courierpostonline.com/feed"
+    "https://www.nj.com/rss/"
+    "outhjersey.com/rss"
+    "https://nmindepth.com/feed"
+    "https://www.koat.com/article/rss/3618299"
+    
 ]
 
 def fetch_news():
