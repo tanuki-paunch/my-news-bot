@@ -1,6 +1,8 @@
-name: Final Attempt Bot
+name: My Actual News Bot
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 13 * * *'
 
 jobs:
   build:
@@ -11,29 +13,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Execute News Search
+      - name: Run My Bot
         run: |
           pip install feedparser beautifulsoup4 requests
-          cat << 'EOF' > ghost_script.py
-          import feedparser
-          import datetime
-          KEYWORDS = ["AI", "Tech", "Space"]
-          # We use a reliable feed to ensure it works the first time
-          feed = feedparser.parse("https://news.google.com/rss")
-          articles = []
-          for entry in feed.entries[:8]:
-              articles.append(f"<li><a href='{entry.link}'>{entry.title}</a></li>")
-          
-          html = f"<html><body style='font-family:sans-serif;padding:40px;'><h1>News Update</h1><p>{datetime.datetime.now()}</p><ul>{''.join(articles)}</ul></body></html>"
-          with open("index.html", "w") as f:
-              f.write(html)
-          EOF
-          python ghost_script.py
+          python bot.py
 
-      - name: Publish to Pages
+      - name: Publish
         run: |
           git config --global user.name 'NewsBot'
           git config --global user.email 'bot@noreply.github.com'
           git add index.html
-          git commit -m "forced update" || exit 0
+          git commit -m "update with my keywords" || exit 0
           git push
