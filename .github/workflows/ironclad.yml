@@ -13,7 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Required to handle the history correctly
+          fetch-depth: 0
 
       - name: Generate News
         run: |
@@ -21,36 +21,33 @@ jobs:
           python3 - <<'EOF'
           import feedparser
           import datetime
+          import urllib.parse
 
           KEYWORDS = ["Zorro Ranch", "Clementon"]
-          RSS_FEEDS = [
-              "https://news.google.com/rss", 
-              "https://www.courierpostonline.com/arc/outboundfeeds/rss/", 
-              "https://www.nj.com/arc/outboundfeeds/rss/", 
-              "https://www.southjersey.com/rss", 
-              "https://nmindepth.com/feed", 
-              "https://www.koat.com/search-results-rss/762312/"
-          ]
           
+          # We are now searching Google News SPECIFICALLY for these terms
           results = []
-          for url in RSS_FEEDS:
+          for key in KEYWORDS:
+              query = urllib.parse.quote(key)
+              search_url = f"https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
+              
               try:
-                  feed = feedparser.parse(url)
-                  for entry in feed.entries:
-                      if any(k.lower() in entry.title.lower() for k in KEYWORDS):
-                          results.append(f"<li><a href='{entry.link}' target='_blank'>{entry.title}</a></li>")
+                  feed = feedparser.parse(search_url)
+                  for entry in feed.entries[:5]: # Take top 5 for each keyword
+                      results.append(f"<li><strong>[{key}]</strong> <a href='{entry.link}' target='_blank'>{entry.title}</a></li>")
               except:
                   continue
           
-          list_html = "".join(results) if results else "<li>No news found for those specific topics today.</li>"
+          list_html = "".join(results) if results else "<li>No specific mentions of Zorro Ranch or Clementon found in the last 24 hours.</li>"
+          
           full_page = f"""
           <html>
-          <body style='font-family:sans-serif; padding:50px; max-width:800px; margin:auto; background:#f9f9f9;'>
-            <div style='background:white; padding:30px; border-radius:8px; border:1px solid #ddd;'>
-              <h1 style='color:#333;'>Daily Briefing</h1>
+          <body style='font-family:sans-serif; padding:50px; max-width:800px; margin:auto; line-height:1.6;'>
+            <div style='background:white; padding:30px; border:1px solid #ddd; border-radius:8px;'>
+              <h1>Targeted Briefing</h1>
               <p><small>Last updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')} UTC</small></p>
               <hr>
-              <ul style='line-height:1.8; font-size:18px;'>{list_html}</ul>
+              <ul>{list_html}</ul>
             </div>
           </body>
           </html>
@@ -64,7 +61,6 @@ jobs:
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
           git add index.html
-          git commit -m "Update News" || exit 0
-          # We pull and then force push to stop the "Rejected" error
+          git commit -m "Update Targeted News" || exit 0
           git pull --rebase origin main
           git push -f origin main
