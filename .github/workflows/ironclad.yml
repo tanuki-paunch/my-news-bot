@@ -1,0 +1,54 @@
+name: Ironclad News
+on:
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run
+        run: |
+          python3 - <<'EOF'
+          import urllib.request
+          import datetime
+
+          # DATA
+          KEYWORDS = ["AI", "Space", "Cooking"]
+          URL = "https://news.google.com/rss"
+          
+          try:
+              req = urllib.request.Request(URL, headers={'User-Agent': 'Mozilla/5.0'})
+              with urllib.request.urlopen(req) as response:
+                  xml = response.read().decode('utf-8')
+              
+              items = xml.split('<item>')[1:]
+              html_content = ""
+              
+              for item in items:
+                  title = item.split('<title>')[1].split('</title>')[0]
+                  link = item.split('<link>')[1].split('</link>')[0]
+                  if any(k.lower() in title.lower() for k in KEYWORDS):
+                      html_content += f"<li><a href='{link}'>{title}</a></li>"
+              
+              if not html_content:
+                  html_content = "<li>No news found today.</li>"
+              
+              page = f"<html><body><h1>News: {datetime.date.today()}</h1><ul>{html_content}</ul></body></html>"
+              with open("index.html", "w") as f:
+                  f.write(page)
+          except Exception as e:
+              print(f"Error: {e}")
+          EOF
+
+      - name: Save
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add index.html
+          git commit -m "update" || exit 0
+          git push
