@@ -1,0 +1,57 @@
+name: News Engine
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 13 * * *'
+
+jobs:
+  run-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate News Page
+        run: |
+          pip install feedparser beautifulsoup4 requests
+          python - <<EOF
+          import feedparser
+          from bs4 import BeautifulSoup
+          import datetime
+
+          # --- CHANGE YOUR TOPICS HERE ---
+          KEYWORDS = ["Zorro Ranch", "Clementon", "Chris Hammond"]
+          # -------------------------------
+
+          RSS_FEEDS = [
+    "https://news.google.com/rss",
+    "courierpostonline.com/feed"
+    "https://www.nj.com/rss/"
+    "outhjersey.com/rss"
+    "https://nmindepth.com/feed"
+    "https://www.koat.com/article/rss/3618299"
+    
+]
+          results = []
+          
+          for url in RSS_FEEDS:
+              feed = feedparser.parse(url)
+              for entry in feed.entries:
+                  if any(key.lower() in entry.title.lower() for key in KEYWORDS):
+                      summary = BeautifulSoup(getattr(entry, 'summary', ''), 'html.parser').get_text()[:200]
+                      results.append(f"<div style='margin-bottom:20px;'><h3><a href=\"{entry.link}\">{entry.title}</a></h3><p>{summary}...</p></div>")
+          
+          output = "".join(results) if results else "<h2>No news found for those topics today.</h2>"
+          with open("index.html", "w") as f:
+              f.write(f"<html><body style='font-family:sans-serif;max-width:800px;margin:auto;padding:40px;'><h1>Daily Briefing</h1>{output}</body></html>")
+          EOF
+
+      - name: Deploy
+        run: |
+          git config --global user.name 'NewsBot'
+          git config --global user.email 'bot@noreply.github.com'
+          git add index.html
+          git commit -m "Update Feed" || exit 0
+          git push
