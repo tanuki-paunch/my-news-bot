@@ -1,0 +1,36 @@
+name: Ghost News Bot
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build and Run
+        run: |
+          pip install feedparser beautifulsoup4 requests
+          cat << 'EOF' > ghost.py
+          import feedparser
+          import datetime
+          KEYWORDS = ["AI", "Tech", "Space"]
+          feed = feedparser.parse("https://news.google.com/rss")
+          results = []
+          for entry in feed.entries[:10]:
+              results.append(f"<li><a href='{entry.link}'>{entry.title}</a></li>")
+          with open("index.html", "w") as f:
+              f.write(f"<html><body><h1>News {datetime.datetime.now()}</h1><ul>{''.join(results)}</ul></body></html>")
+          EOF
+          python ghost.py
+
+      - name: Push to Web
+        run: |
+          git config --global user.name 'GhostBot'
+          git config --global user.email 'bot@bot.com'
+          git add index.html
+          git commit -m "update" || exit 0
+          git push
