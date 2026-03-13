@@ -1,11 +1,9 @@
 name: News Engine
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 13 * * *'
 
 jobs:
-  run-and-publish:
+  run-bot:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -13,38 +11,45 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Generate News Page
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: pip install feedparser beautifulsoup4 requests
+
+      - name: Generate News
         run: |
-          pip install feedparser beautifulsoup4 requests
-          python - <<EOF
+          cat << 'EOF' > run_me.py
           import feedparser
           from bs4 import BeautifulSoup
           import datetime
-
-          # --- CHANGE YOUR TOPICS HERE ---
+          
+          # EDIT THESE KEYWORDS RIGHT HERE
           KEYWORDS = ["Zorro Ranch", "Clementon", "Chris Hammond"]
-          # -------------------------------
-
           RSS_FEEDS = ["https://news.google.com/rss", "courierpostonline.com/feed", "https://www.nj.com/rss/",  "southjersey.com/rss", "https://nmindepth.com/feed",  "https://www.koat.com/article/rss/3618299"]
-   
+          
           results = []
+          for url in FEEDS:
+              f = feedparser.parse(url)
+              for e in f.entries:
+                  if any(k.lower() in e.title.lower() for k in KEYWORDS):
+                      results.append(f"<li><a href='{e.link}'>{e.title}</a></li>")
           
-          for url in RSS_FEEDS:
-              feed = feedparser.parse(url)
-              for entry in feed.entries:
-                  if any(key.lower() in entry.title.lower() for key in KEYWORDS):
-                      summary = BeautifulSoup(getattr(entry, 'summary', ''), 'html.parser').get_text()[:200]
-                      results.append(f"<div style='margin-bottom:20px;'><h3><a href=\"{entry.link}\">{entry.title}</a></h3><p>{summary}...</p></div>")
+          html = f"<html><body><h1>News Brief: {datetime.datetime.now().strftime('%Y-%m-%d')}</h1><ul>"
+          html += "".join(results) if results else "<li>No stories found today.</li>"
+          html += "</ul></body></html>"
           
-          output = "".join(results) if results else "<h2>No news found for those topics today.</h2>"
           with open("index.html", "w") as f:
-              f.write(f"<html><body style='font-family:sans-serif;max-width:800px;margin:auto;padding:40px;'><h1>Daily Briefing</h1>{output}</body></html>")
+              f.write(html)
           EOF
+          python run_me.py
 
-      - name: Deploy
+      - name: Commit and Push
         run: |
-          git config --global user.name 'NewsBot'
-          git config --global user.email 'bot@noreply.github.com'
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
           git add index.html
-          git commit -m "Update Feed" || exit 0
+          git commit -m "Update News" || exit 0
           git push
