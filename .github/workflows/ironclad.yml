@@ -1,6 +1,8 @@
 name: Ironclad News
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 13 * * *'
 
 jobs:
   run:
@@ -11,38 +13,48 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run
+      - name: Generate News
         run: |
+          pip install feedparser
           python3 - <<'EOF'
-          import urllib.request
+          import feedparser
           import datetime
 
-          # DATA
-          KEYWORDS = ["AI", "Space", "Cooking"]
-          URL = "https://news.google.com/rss"
+          # YOUR TARGET DATA
+          KEYWORDS = ["Zorro Ranch", "Clementon"]
+          RSS_FEEDS = [
+              "https://news.google.com/rss", 
+              "https://www.courierpostonline.com/arc/outboundfeeds/rss/", 
+              "https://www.nj.com/arc/outboundfeeds/rss/", 
+              "https://www.southjersey.com/rss", 
+              "https://nmindepth.com/feed", 
+              "https://www.koat.com/search-results-rss/762312/"
+          ]
           
-          try:
-              req = urllib.request.Request(URL, headers={'User-Agent': 'Mozilla/5.0'})
-              with urllib.request.urlopen(req) as response:
-                  xml = response.read().decode('utf-8')
-              
-              items = xml.split('<item>')[1:]
-              html_content = ""
-              
-              for item in items:
-                  title = item.split('<title>')[1].split('</title>')[0]
-                  link = item.split('<link>')[1].split('</link>')[0]
-                  if any(k.lower() in title.lower() for k in KEYWORDS):
-                      html_content += f"<li><a href='{link}'>{title}</a></li>"
-              
-              if not html_content:
-                  html_content = "<li>No news found today.</li>"
-              
-              page = f"<html><body><h1>News: {datetime.date.today()}</h1><ul>{html_content}</ul></body></html>"
-              with open("index.html", "w") as f:
-                  f.write(page)
-          except Exception as e:
-              print(f"Error: {e}")
+          results = []
+          for url in RSS_FEEDS:
+              try:
+                  feed = feedparser.parse(url)
+                  for entry in feed.entries:
+                      if any(k.lower() in entry.title.lower() for k in KEYWORDS):
+                          results.append(f"<li><a href='{entry.link}'>{entry.title}</a></li>")
+              except:
+                  continue
+          
+          # BUILD THE PAGE
+          list_html = "".join(results) if results else "<li>No news found for those specific topics today.</li>"
+          full_page = f"""
+          <html>
+          <body style='font-family:sans-serif; padding:50px; max-width:800px; margin:auto;'>
+            <h1>Daily Briefing</h1>
+            <p><small>Last updated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}</small></p>
+            <ul>{list_html}</ul>
+          </body>
+          </html>
+          """
+          
+          with open("index.html", "w") as f:
+              f.write(full_page)
           EOF
 
       - name: Save
@@ -50,5 +62,5 @@ jobs:
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
           git add index.html
-          git commit -m "update" || exit 0
+          git commit -m "Update with custom keywords" || exit 0
           git push
