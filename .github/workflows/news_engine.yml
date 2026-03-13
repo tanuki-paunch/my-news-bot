@@ -27,7 +27,7 @@ jobs:
           import datetime
           
           # EDIT THESE KEYWORDS RIGHT HERE
-          KEYWORDS = ["Zorro Ranch", "Clementon", "Chris Hammond"]
+          KEYWORDS = ["Zorro Ranch", "Clementon"]
           RSS_FEEDS = ["https://news.google.com/rss", "courierpostonline.com/feed", "https://www.nj.com/rss/",  "southjersey.com/rss", "https://nmindepth.com/feed",  "https://www.koat.com/article/rss/3618299"]
           
           results = []
