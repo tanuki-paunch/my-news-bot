@@ -1,0 +1,26 @@
+name: Update News
+on:
+  schedule:
+    - cron: '0 9 * * *' # Runs at 9:00 AM every day
+  workflow_dispatch: # Allows you to run it manually
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run bot
+        run: python bot.py
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'NewsBot'
+          git config --global user.email 'bot@noreply.github.com'
+          git add index.html
+          git commit -m "Daily news update" || exit 0
+          git push
